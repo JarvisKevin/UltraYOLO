@@ -536,7 +536,7 @@ class Mosaic(BaseMixTransform):
             >>> mosaic_aug = Mosaic(dataset, imgsz=640, p=0.5, n=4)
         """
         assert 0 <= p <= 1.0, f"The probability should be in range [0, 1], but got {p}."
-        assert n in {4, 9}, "grid must be equal to 4 or 9."
+        assert n in {3, 4, 9}, "grid must be equal to 3, 4 or 9."
         super().__init__(dataset=dataset, p=p)
         self.imgsz = imgsz
         self.border = (-imgsz // 2, -imgsz // 2)  # width, height
@@ -589,6 +589,7 @@ class Mosaic(BaseMixTransform):
         """
         assert labels.get("rect_shape", None) is None, "rect and mosaic are mutually exclusive."
         assert len(labels.get("mix_labels", [])), "There are no other images for mosaic augment."
+
         return (
             self._mosaic3(labels) if self.n == 3 else self._mosaic4(labels) if self.n == 4 else self._mosaic9(labels)
         )  # This code is modified for mosaic3 method.
@@ -861,6 +862,72 @@ class Mosaic(BaseMixTransform):
         return final_labels
 
 
+# class MixUp(BaseMixTransform):
+#     """
+#     Apply MixUp augmentation to image datasets.
+
+#     This class implements the MixUp augmentation technique as described in the paper [mixup: Beyond Empirical Risk
+#     Minimization](https://arxiv.org/abs/1710.09412). MixUp combines two images and their labels using a random weight.
+
+#     Attributes:
+#         dataset (Any): The dataset to which MixUp augmentation will be applied.
+#         pre_transform (Callable | None): Optional transform to apply before MixUp.
+#         p (float): Probability of applying MixUp augmentation.
+
+#     Methods:
+#         _mix_transform: Apply MixUp augmentation to the input labels.
+
+#     Examples:
+#         >>> from ultralytics.data.augment import MixUp
+#         >>> dataset = YourDataset(...)  # Your image dataset
+#         >>> mixup = MixUp(dataset, p=0.5)
+#         >>> augmented_labels = mixup(original_labels)
+#     """
+
+#     def __init__(self, dataset, pre_transform=None, p: float = 0.0) -> None:
+#         """
+#         Initialize the MixUp augmentation object.
+
+#         MixUp is an image augmentation technique that combines two images by taking a weighted sum of their pixel
+#         values and labels. This implementation is designed for use with the Ultralytics YOLO framework.
+
+#         Args:
+#             dataset (Any): The dataset to which MixUp augmentation will be applied.
+#             pre_transform (Callable | None): Optional transform to apply to images before MixUp.
+#             p (float): Probability of applying MixUp augmentation to an image. Must be in the range [0, 1].
+
+#         Examples:
+#             >>> from ultralytics.data.dataset import YOLODataset
+#             >>> dataset = YOLODataset("path/to/data.yaml")
+#             >>> mixup = MixUp(dataset, pre_transform=None, p=0.5)
+#         """
+#         super().__init__(dataset=dataset, pre_transform=pre_transform, p=p)
+
+#     def _mix_transform(self, labels: Dict[str, Any]) -> Dict[str, Any]:
+#         """
+#         Apply MixUp augmentation to the input labels.
+
+#         This method implements the MixUp augmentation technique as described in the paper
+#         "mixup: Beyond Empirical Risk Minimization" (https://arxiv.org/abs/1710.09412).
+
+#         Args:
+#             labels (Dict[str, Any]): A dictionary containing the original image and label information.
+
+#         Returns:
+#             (Dict[str, Any]): A dictionary containing the mixed-up image and combined label information.
+
+#         Examples:
+#             >>> mixer = MixUp(dataset)
+#             >>> mixed_labels = mixer._mix_transform(labels)
+#         """
+#         r = np.random.beta(32.0, 32.0)  # mixup ratio, alpha=beta=32.0
+#         labels2 = labels["mix_labels"][0]
+#         labels["img"] = (labels["img"] * r + labels2["img"] * (1 - r)).astype(np.uint8)
+#         labels["instances"] = Instances.concatenate([labels["instances"], labels2["instances"]], axis=0)
+#         labels["cls"] = np.concatenate([labels["cls"], labels2["cls"]], 0)
+#         return labels
+
+import os
 class MixUp(BaseMixTransform):
     """
     Apply MixUp augmentation to image datasets.
@@ -901,6 +968,10 @@ class MixUp(BaseMixTransform):
             >>> mixup = MixUp(dataset, pre_transform=None, p=0.5)
         """
         super().__init__(dataset=dataset, pre_transform=pre_transform, p=p)
+        
+        IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'tiff'}
+        mixup_img_dir = "/data1/dataset/coco_train2017"
+        self.mixup_img_list = [os.path.join(mixup_img_dir, file_name) for file_name in os.listdir(mixup_img_dir) if file_name.lower().endswith(tuple(f'.{ext}' for ext in IMAGE_EXTENSIONS))]
 
     def _mix_transform(self, labels: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -919,11 +990,27 @@ class MixUp(BaseMixTransform):
             >>> mixer = MixUp(dataset)
             >>> mixed_labels = mixer._mix_transform(labels)
         """
-        r = np.random.beta(32.0, 32.0)  # mixup ratio, alpha=beta=32.0
-        labels2 = labels["mix_labels"][0]
-        labels["img"] = (labels["img"] * r + labels2["img"] * (1 - r)).astype(np.uint8)
-        labels["instances"] = Instances.concatenate([labels["instances"], labels2["instances"]], axis=0)
-        labels["cls"] = np.concatenate([labels["cls"], labels2["cls"]], 0)
+        if np.random.random() > 0.5:
+            r = np.random.beta(32.0, 32.0)  # mixup ratio, alpha=beta=32.0
+            labels2 = labels["mix_labels"][0]
+            labels["img"] = (labels["img"] * r + labels2["img"] * (1 - r)).astype(np.uint8)
+            labels["instances"] = Instances.concatenate([labels["instances"], labels2["instances"]], axis=0)
+            labels["cls"] = np.concatenate([labels["cls"], labels2["cls"]], 0)
+        else:
+            img_h, img_w = labels["img"].shape[:2]
+            self.mixup_img_dir = np.random.choice(self.mixup_img_list, 1)[0]
+            mix_scale = np.random.sample() + 1
+            mix_img = cv2.imread(self.mixup_img_dir)
+            mix_img = cv2.rotate(mix_img, np.random.choice([0,1,2]))
+            mix_img = cv2.resize(mix_img, (int(img_w*mix_scale), int(img_h*mix_scale)))
+            mix_img = mix_img[:img_h, :img_w, :]
+
+            r = np.random.beta(32.0, 32.0)  # mixup ratio, alpha=beta=32.0
+            labels["img"] = (labels["img"] * r + mix_img * (1 - r)).astype(np.uint8)
+
+            # import time
+            # os.makedirs("/home/wenjunlin/workspace/UltraYOLO/ultralytics/data_tmp/", exist_ok=True)
+            # cv2.imwrite(f"/home/wenjunlin/workspace/UltraYOLO/ultralytics/data_tmp/{time.time()}.png", labels["img"])
         return labels
 
 
@@ -1928,7 +2015,7 @@ class Albumentations:
             os.environ["NO_ALBUMENTATIONS_UPDATE"] = "1"  # suppress Albumentations upgrade message
             import albumentations as A
 
-            check_version(A.__version__, "1.0.3", hard=True)  # version requirement
+            # check_version(A.__version__, "1.0.3", hard=True)  # version requirement
 
             # List of possible spatial transforms
             spatial_transforms = {
@@ -1972,17 +2059,50 @@ class Albumentations:
                 "Transpose",
                 "VerticalFlip",
                 "XYMasking",
+                "AtLeastOneBBoxRandomCrop",
+                "OneOf",
             }  # from https://albumentations.ai/docs/getting_started/transforms_and_targets/#spatial-level-transforms
 
             # Transforms
-            T = [
+            ori_T = [
                 A.Blur(p=0.01),
                 A.MedianBlur(p=0.01),
                 A.ToGray(p=0.01),
                 A.CLAHE(p=0.01),
                 A.RandomBrightnessContrast(p=0.0),
                 A.RandomGamma(p=0.0),
-                A.ImageCompression(quality_range=(75, 100), p=0.0),
+                A.ImageCompression(quality_lower=75, quality_upper=100, p=0.0),
+            ]
+
+            # imgsz = 1500
+            # T = [
+            #     A.OneOf(
+            #         [A.AtLeastOneBBoxRandomCrop(height=imgsz//2, width=imgsz//2, erosion_factor=0.2, p=1.0),
+            #         A.AtLeastOneBBoxRandomCrop(height=imgsz//3, width=imgsz//3, erosion_factor=0.2, p=1.0),
+            #         A.AtLeastOneBBoxRandomCrop(height=imgsz//4, width=imgsz//4, erosion_factor=0.2, p=1.0),
+            #         A.AtLeastOneBBoxRandomCrop(height=imgsz//5, width=imgsz//5, erosion_factor=0.2, p=1.0),    
+            #         ],
+            #         p=1),
+            #     # A.Blur(p=0.01),
+            #     # A.MedianBlur(p=0.01),
+            #     # A.ToGray(p=0.01),
+            #     # A.CLAHE(p=0.01),
+            #     # A.RandomRotate90(p=1.0),
+            #     # A.RandomBrightnessContrast(p=0.0),
+            #     # A.RandomGamma(p=0.0),
+            #     # A.ImageCompression(quality_lower=75, quality_upper=100, p=0.1),
+            # ]
+
+
+            T = [
+                A.Blur(p=0.01),
+                A.MedianBlur(p=0.01),
+                A.ToGray(p=0.01),
+                A.CLAHE(p=0.01),
+                A.RandomRotate90(p=1.0),
+                A.RandomBrightnessContrast(p=0.0),
+                A.RandomGamma(p=0.0),
+                A.ImageCompression(quality_lower=75, quality_upper=100, p=0.1),
             ]
 
             # Compose transforms
@@ -2575,7 +2695,76 @@ def v8_transforms(dataset, imgsz: int, hyp: IterableSimpleNamespace, stretch: bo
             pre_transform,
             MixUp(dataset, pre_transform=pre_transform, p=hyp.mixup),
             CutMix(dataset, pre_transform=pre_transform, p=hyp.cutmix),
-            Albumentations(p=1.0),
+            # Albumentations(p=1.0),
+            RandomHSV(hgain=hyp.hsv_h, sgain=hyp.hsv_s, vgain=hyp.hsv_v),
+            RandomFlip(direction="vertical", p=hyp.flipud, flip_idx=flip_idx),
+            RandomFlip(direction="horizontal", p=hyp.fliplr, flip_idx=flip_idx),  
+            # Albumentations(p=1.0),
+            # LetterBox(new_shape=(imgsz, imgsz)),
+        ]
+    )  # transforms
+
+
+def MusicScore_transforms(dataset, imgsz: int, hyp: IterableSimpleNamespace, stretch: bool = False):
+    """
+    Apply a series of image transformations for training.
+
+    This function creates a composition of image augmentation techniques to prepare images for YOLO training.
+    It includes operations such as mosaic, copy-paste, random perspective, mixup, and various color adjustments.
+
+    Args:
+        dataset (Dataset): The dataset object containing image data and annotations.
+        imgsz (int): The target image size for resizing.
+        hyp (IterableSimpleNamespace): A dictionary of hyperparameters controlling various aspects of the transformations.
+        stretch (bool): If True, applies stretching to the image. If False, uses LetterBox resizing.
+
+    Returns:
+        (Compose): A composition of image transformations to be applied to the dataset.
+
+    Examples:
+        >>> from ultralytics.data.dataset import YOLODataset
+        >>> from ultralytics.utils import IterableSimpleNamespace
+        >>> dataset = YOLODataset(img_path="path/to/images", imgsz=640)
+        >>> hyp = IterableSimpleNamespace(mosaic=1.0, copy_paste=0.5, degrees=10.0, translate=0.2, scale=0.9)
+        >>> transforms = v8_transforms(dataset, imgsz=640, hyp=hyp)
+        >>> augmented_data = transforms(dataset[0])
+    """
+    mosaic = Mosaic(dataset, imgsz=imgsz, p=hyp.mosaic)
+    affine = RandomPerspective(
+        degrees=hyp.degrees,
+        translate=hyp.translate,
+        scale=hyp.scale,
+        shear=hyp.shear,
+        perspective=hyp.perspective,
+        pre_transform=None if stretch else LetterBox(new_shape=(imgsz, imgsz)),
+    )
+
+    pre_transform = Compose([mosaic, Albumentations(p=1.0), affine])
+    if hyp.copy_paste_mode == "flip":
+        pre_transform.insert(1, CopyPaste(p=hyp.copy_paste, mode=hyp.copy_paste_mode))
+    else:
+        pre_transform.append(
+            CopyPaste(
+                dataset,
+                pre_transform=Compose([Mosaic(dataset, imgsz=imgsz, p=hyp.mosaic), affine]),
+                p=hyp.copy_paste,
+                mode=hyp.copy_paste_mode,
+            )
+        )
+    flip_idx = dataset.data.get("flip_idx", [])  # for keypoints augmentation
+    if dataset.use_keypoints:
+        kpt_shape = dataset.data.get("kpt_shape", None)
+        if len(flip_idx) == 0 and (hyp.fliplr > 0.0 or hyp.flipud > 0.0):
+            hyp.fliplr = hyp.flipud = 0.0  # both fliplr and flipud require flip_idx
+            LOGGER.warning("No 'flip_idx' array defined in data.yaml, disabling 'fliplr' and 'flipud' augmentations.")
+        elif flip_idx and (len(flip_idx) != kpt_shape[0]):
+            raise ValueError(f"data.yaml flip_idx={flip_idx} length must be equal to kpt_shape[0]={kpt_shape[0]}")
+
+    return Compose(
+        [
+            pre_transform,
+            MixUp(dataset, pre_transform=pre_transform, p=hyp.mixup),
+            CutMix(dataset, pre_transform=pre_transform, p=hyp.cutmix),
             RandomHSV(hgain=hyp.hsv_h, sgain=hyp.hsv_s, vgain=hyp.hsv_v),
             RandomFlip(direction="vertical", p=hyp.flipud, flip_idx=flip_idx),
             RandomFlip(direction="horizontal", p=hyp.fliplr, flip_idx=flip_idx),

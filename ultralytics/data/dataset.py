@@ -26,6 +26,7 @@ from .augment import (
     classify_augmentations,
     classify_transforms,
     v8_transforms,
+    MusicScore_transforms,
 )
 from .base import BaseDataset
 from .converter import merge_multi_segment
@@ -219,7 +220,7 @@ class YOLODataset(BaseDataset):
             hyp.mosaic = hyp.mosaic if self.augment and not self.rect else 0.0
             hyp.mixup = hyp.mixup if self.augment and not self.rect else 0.0
             hyp.cutmix = hyp.cutmix if self.augment and not self.rect else 0.0
-            transforms = v8_transforms(self, self.imgsz, hyp)
+            transforms = v8_transforms(self, self.imgsz, hyp) #  MusicScore_transforms(self, self.imgsz, hyp) # 
         else:
             transforms = Compose([LetterBox(new_shape=(self.imgsz, self.imgsz), scaleup=False)])
         transforms.append(

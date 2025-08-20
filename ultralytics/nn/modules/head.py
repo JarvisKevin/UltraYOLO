@@ -75,7 +75,7 @@ class Detect(nn.Module):
     legacy = False  # backward compatibility for v3/v5/v8/v9 models
     xyxy = False  # xyxy or xywh output
 
-    def __init__(self, nc: int = 80, ch: Tuple = ()):
+    def __init__(self, nc: int = 80, ch: Tuple = ()): # reg_max: int = 16, 
         """
         Initialize the YOLO detection layer with specified number of classes and channels.
 
