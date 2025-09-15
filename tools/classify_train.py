@@ -11,10 +11,13 @@ def main(args):
     elif "rtdetr" in args.model_name:
         model = RTDETR(args.model_name+'.yaml')
     
+
     if os.path.exists(pretrained):
+        print("********** Loading pretrained ******************")
         model = model.load(pretrained)  # load a pretrained model (recommended for training)
     else:
-        model = model.load("/home/wenjunlin/workspace/UltraYOLO/pretrained/yolo11n.pt")
+        # model = model.load("/home/wenjunlin/workspace/UltraYOLO/pretrained/yolo11n.pt")
+        print("********** pretrained MISS ******************")
 
     # Train the model with 2 GPUs
     results = model.train(data=data_path, 
@@ -30,7 +33,7 @@ def main(args):
                             augment=True,
                             project=args.workdir,
                             classes=args.classes,
-                            name=f"0712/{args.model_name}/{args.output_name}",
+                            name=f"{args.model_name}/{args.output_name}",
                             close_mosaic=10,
                             copy_paste=0.5, 
                             cutmix=0.0,

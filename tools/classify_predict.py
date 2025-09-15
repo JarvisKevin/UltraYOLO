@@ -15,12 +15,12 @@ def main(args):
 
     results = model.predict(source=sources,
                     batch=1,
-                    # visualize=True,
+                    visualize=args.visualize,
                     imgsz=args.input_shape,
                     project=args.workdir,
                     save=True,
                     show_labels=False,
-                    name=f"0712/{args.model_name}/{args.output_name}")
+                    name=f"{args.model_name}/{args.output_name}")
 
     # if isinstance(sources, list):
     #     for source in sources:
@@ -60,6 +60,7 @@ if __name__ == "__main__":
     parser.add_argument('--device', nargs="+", type=str, default=["0"])
     parser.add_argument('--classes', nargs="+", type=str, default=None)
     parser.add_argument('--bs', type=int, default=24)
+    parser.add_argument('--visualize', type=bool, default=False)
     parser.add_argument('--num_workers', type=int, default=4)
     
     args = parser.parse_args()
@@ -67,21 +68,42 @@ if __name__ == "__main__":
 
 """
 
-/home/wenjunlin/workspace/UltraYOLO/line_det/0712/yolo11n/ori/y11n_3500_bs24_e100_lr3_0.99407,0.89002/weights/best.pt
-
-
 python tools/classify_predict.py \
-    --checkpoint /home/wenjunlin/workspace/UltraYOLO/line_det/0712/yolo11n/ori/y11n_3500_bs24_e100_lr3_0.99407,0.89002/weights/best.pt \
-    --data_path /home/wenjunlin/workspace/UltraYOLO/222.png \
+    --checkpoint /home/wenjunlin/workspace/UltraYOLO/line_det/yolo11/y11n_2500_bs64_e100_lr3_compress_0.99323,0.85032/weights/best.pt \
+    --data_path /home/wenjunlin/workspace/UltraYOLO/page_1.png \
     --input_shape 2500 \
-    --model_name yolo11n \
+    --model_name yolo11 \
     --bs 1 \
     --device 0 \
     --workdir ./line_det \
-    --output_name ori/y11n_3500_bs24_e100_lr3/predict/2500/val \
+    --output_name yolo11/y11n_2500_bs64_e100_lr3_compress_0.99323,0.85032/predict/2500/val \
     --num_workers 10
 
+python tools/classify_predict.py \
+    --checkpoint /home/wenjunlin/workspace/UltraYOLO/line_det/rtdetr-l/rtdetr_l/baseline/y11n_2500_bs24_e100_lr32_0.99474,0.8419/weights/best.pt \
+    --data_path /home/wenjunlin/workspace/UltraYOLO/page_1.png \
+    --input_shape 3000 \
+    --model_name rtdetr_l \
+    --bs 1 \
+    --device cpu \
+    --workdir ./line_det \
+    --output_name rtdetr/baseline/y11n_2500_bs24_e100_lr32_0.99474,0.8419/predict/3000/val \
+    --num_workers 10
     
+python tools/classify_predict.py \
+    --checkpoint /home/wenjunlin/workspace/UltraYOLO/line_det/rtdetr-l/rtdetr_l/baseline/y11n_2500_bs24_e100_lr32_0.99474,0.8419/weights/best.pt \
+    --data_path /home/wenjunlin/workspace/UltraYOLO/20250821-102031.png \
+    --input_shape 2500 \
+    --model_name rtdetr_l \
+    --bs 1 \
+    --device 0 \
+    --workdir ./line_det \
+    --output_name rtdetr/baseline/y11n_2500_bs24_e100_lr32_0.99474,0.8419/predict/2500/val \
+    --num_workers 10
+
+
+    # 看3000的能不能检测出来！
+    # rtdetr-l/rtdetr_l/baseline/y11n_3000_bs32_e50_lr3_compress_0.99346,0.82093/weights/best.pt
 
 
 python tools/classify_predict.py \
@@ -180,4 +202,54 @@ python tools/classify_train.py \
     --output_name y12l_1824_bs8_e100_lr3 \
     --num_workers 8
 
+    
+python tools/classify_predict.py \
+    --checkpoint /home/wenjunlin/workspace/UltraYOLO/line_det0905/yolo11l/y11l_3500_bs14_e30_lr4_compress_0.99414,0.88484/weights/best.pt \
+    --data_path /home/wenjunlin/workspace/UltraYOLO/0line/cfg/ann/testimages \
+    --input_shape 3500 \
+    --model_name yolo11m \
+    --bs 1 \
+    --device 0 \
+    --workdir ./line_det0905 \
+    --output_name yolo11l/y11l_3500_bs21_e30_lr4_compress/predict/3500/val \
+    --num_workers 10
+
+python tools/classify_predict.py \
+    --checkpoint /home/wenjunlin/workspace/UltraYOLO/line_det0905/yolo11l/y11l_3500_bs14_e30_lr4_compress_0.99414,0.88484/weights/best.pt \
+    --data_path /home/wenjunlin/workspace/UltraYOLO/0line/cfg/ann/testimages \
+    --input_shape 1500 \
+    --model_name yolo11m \
+    --bs 1 \
+    --device 0 \
+    --workdir ./line_det0905 \
+    --output_name yolo11l/y11l_3500_bs21_e30_lr4_compress/predict/1500/val \
+    --num_workers 10
+
+    
+python tools/classify_predict.py \
+    --checkpoint /home/wenjunlin/workspace/UltraYOLO/line_det0905/yolo11l/y11l_3500_bs14_e30_lr4_compress_0.99414,0.88484/weights/best.pt \
+    --data_path /home/wenjunlin/workspace/UltraYOLO/test_data/86285 \
+    --input_shape 3500 \
+    --model_name yolo11m \
+    --bs 1 \
+    --device 0 \
+    --workdir ./line_det0905 \
+    --output_name yolo11l/y11l_3500_bs21_e30_lr4_compress/predict/3500/val86285 \
+    --num_workers 10
+
+
+python tools/classify_predict.py \
+    --checkpoint /home/wenjunlin/workspace/UltraYOLO/line_det0905/yolo11m/y11m_3500_bs21_e30_lr4_compress_0.99444,0.8836/weights/best.pt \
+    --data_path /home/wenjunlin/workspace/UltraYOLO/test_data/86285 \
+    --input_shape 3500 \
+    --model_name yolo11m \
+    --bs 1 \
+    --device 0 \
+    --workdir ./line_det0905 \
+    --output_name yolo11m/y11m_3500_bs21_e30_lr4_compress/predict/3500/val86285 \
+    --num_workers 10 
+
 """
+
+
+

@@ -19,6 +19,8 @@ from ultralytics.utils.metrics import bbox_ioa
 from ultralytics.utils.ops import segment2box, xywh2xyxy, xyxyxyxy2xywhr
 from ultralytics.utils.torch_utils import TORCHVISION_0_10, TORCHVISION_0_11, TORCHVISION_0_13
 
+from .Extend import CompressByResize
+
 DEFAULT_MEAN = (0.0, 0.0, 0.0)
 DEFAULT_STD = (1.0, 1.0, 1.0)
 
@@ -2668,6 +2670,7 @@ def v8_transforms(dataset, imgsz: int, hyp: IterableSimpleNamespace, stretch: bo
         perspective=hyp.perspective,
         pre_transform=None if stretch else LetterBox(new_shape=(imgsz, imgsz)),
     )
+    
 
     pre_transform = Compose([mosaic, affine])
     if hyp.copy_paste_mode == "flip":
@@ -2681,6 +2684,11 @@ def v8_transforms(dataset, imgsz: int, hyp: IterableSimpleNamespace, stretch: bo
                 mode=hyp.copy_paste_mode,
             )
         )
+    
+    # 压缩
+    compressbyresize = CompressByResize(max_range=2, prob=1)
+    pre_transform.insert(1, compressbyresize)
+
     flip_idx = dataset.data.get("flip_idx", [])  # for keypoints augmentation
     if dataset.use_keypoints:
         kpt_shape = dataset.data.get("kpt_shape", None)
