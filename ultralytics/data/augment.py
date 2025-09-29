@@ -972,7 +972,7 @@ class MixUp(BaseMixTransform):
         super().__init__(dataset=dataset, pre_transform=pre_transform, p=p)
         
         IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'tiff'}
-        mixup_img_dir = "/data1/dataset/coco_train2017"
+        mixup_img_dir = "/home/wjl/workspace/MMDET_SPIANO/texture_background"
         self.mixup_img_list = [os.path.join(mixup_img_dir, file_name) for file_name in os.listdir(mixup_img_dir) if file_name.lower().endswith(tuple(f'.{ext}' for ext in IMAGE_EXTENSIONS))]
 
     def _mix_transform(self, labels: Dict[str, Any]) -> Dict[str, Any]:

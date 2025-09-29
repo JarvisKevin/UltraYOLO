@@ -14,8 +14,10 @@ def main(args):
     model = YOLO(args.checkpoint)
 
     results = model.predict(source=sources,
+                    device=args.device,
                     batch=1,
                     visualize=args.visualize,
+                    save_txt=True,
                     imgsz=args.input_shape,
                     project=args.workdir,
                     save=True,
@@ -67,6 +69,22 @@ if __name__ == "__main__":
     main(args)
 
 """
+
+
+
+
+python tools/classify_predict.py \
+    --checkpoint /home/wjl/workspace/UltraYOLO/line_seg0925/yolo11m-seg/y11m_2500_bs64_e30_lr5_compress_mixup0_mosaic08_degree10_67178/weights/best.pt \
+    --data_path /home/wjl/workspace/UltraYOLO/00_source.png \
+    --input_shape 2500 \
+    --model_name yolo11m-seg \
+    --bs 1 \
+    --device cpu \
+    --workdir ./line_seg0925 \
+    --output_name yolo11m-seg/y11m_2500_bs64_e30_lr5_compress_mixup0_mosaic08_degree10_67178/predict/2500/val \
+    --num_workers 10
+
+    
 
 python tools/classify_predict.py \
     --checkpoint /home/wenjunlin/workspace/UltraYOLO/line_det/yolo11/y11n_2500_bs64_e100_lr3_compress_0.99323,0.85032/weights/best.pt \
